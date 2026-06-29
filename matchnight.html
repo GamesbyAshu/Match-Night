@@ -1,0 +1,1209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>MatchNight</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface2: #1a1a26;
+    --border: #2a2a3d;
+    --neon-blue: #00d4ff;
+    --neon-green: #00ff88;
+    --neon-purple: #a855f7;
+    --text: #f0f0f8;
+    --text-muted: #7070a0;
+    --danger: #ff4466;
+    --gold: #ffd700;
+    --r: 14px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  #app {
+    width: 100%;
+    max-width: 430px;
+    height: 100dvh;
+    overflow: hidden;
+    position: relative;
+    background: var(--bg);
+  }
+
+  /* ── SCREENS ── */
+  .screen {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    overflow-y: auto;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(20px);
+    transition: opacity .3s ease, transform .3s ease;
+  }
+  .screen.active {
+    opacity: 1;
+    pointer-events: all;
+    transform: translateY(0);
+  }
+
+  /* ── TYPOGRAPHY ── */
+  .display {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    letter-spacing: .02em;
+  }
+
+  /* ── BUTTONS ── */
+  .btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border: none;
+    cursor: pointer;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    border-radius: var(--r);
+    padding: 16px 24px;
+    transition: transform .1s, box-shadow .1s, opacity .1s;
+    width: 100%;
+  }
+  .btn:active { transform: scale(.97); }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--neon-blue), #0080cc);
+    color: #fff;
+    box-shadow: 0 0 20px rgba(0,212,255,.35);
+  }
+  .btn-primary:hover { box-shadow: 0 0 30px rgba(0,212,255,.55); }
+  .btn-green {
+    background: linear-gradient(135deg, var(--neon-green), #00bb60);
+    color: #000;
+    box-shadow: 0 0 20px rgba(0,255,136,.3);
+  }
+  .btn-purple {
+    background: linear-gradient(135deg, var(--neon-purple), #7c3aed);
+    color: #fff;
+    box-shadow: 0 0 20px rgba(168,85,247,.3);
+  }
+  .btn-ghost {
+    background: transparent;
+    border: 1.5px solid var(--border);
+    color: var(--text-muted);
+  }
+  .btn-ghost:hover { border-color: var(--neon-blue); color: var(--neon-blue); }
+  .btn-danger {
+    background: linear-gradient(135deg, var(--danger), #cc0033);
+    color: #fff;
+  }
+  .btn-half { width: calc(50% - 6px); }
+  .btn-icon {
+    width: 44px; height: 44px; padding: 0;
+    border-radius: 10px;
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+
+  /* ── BACK BTN ── */
+  .back-btn {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background: var(--surface2);
+    border: 1.5px solid var(--border);
+    color: var(--text-muted);
+    border-radius: 10px;
+    width: 40px; height: 40px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    font-size: 18px;
+    transition: border-color .15s, color .15s;
+    z-index: 10;
+  }
+  .back-btn:hover { border-color: var(--neon-blue); color: var(--neon-blue); }
+
+  /* ── NOISE OVERLAY ── */
+  #app::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.035'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 100;
+    opacity: .4;
+  }
+
+  /* ══════════════════════════════ HOME ══════════════════════════════ */
+  #home {
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    padding: 40px 32px;
+    background: radial-gradient(ellipse at 50% 0%, rgba(0,212,255,.08) 0%, transparent 65%),
+                radial-gradient(ellipse at 80% 100%, rgba(0,255,136,.06) 0%, transparent 55%);
+  }
+  .home-badge {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .15em;
+    text-transform: uppercase;
+    color: var(--neon-blue);
+    background: rgba(0,212,255,.1);
+    border: 1px solid rgba(0,212,255,.25);
+    border-radius: 20px;
+    padding: 5px 14px;
+    margin-bottom: 24px;
+  }
+  .home-logo {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: clamp(56px, 18vw, 80px);
+    line-height: 1;
+    text-align: center;
+    background: linear-gradient(135deg, #fff 30%, var(--neon-blue) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 8px;
+  }
+  .home-tagline {
+    font-size: 15px;
+    color: var(--text-muted);
+    text-align: center;
+    margin-bottom: 48px;
+    line-height: 1.5;
+  }
+  .home-modes {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 48px;
+    width: 100%;
+  }
+  .home-mode-chip {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 6px;
+    text-align: center;
+    font-size: 20px;
+    line-height: 1;
+  }
+  .home-mode-chip span {
+    display: block;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .05em;
+    color: var(--text-muted);
+    margin-top: 5px;
+    text-transform: uppercase;
+  }
+  .home-cta { width: 100%; }
+  .home-footer {
+    margin-top: 24px;
+    font-size: 12px;
+    color: var(--text-muted);
+    text-align: center;
+  }
+
+  /* ══════════════════════════════ SETUP ══════════════════════════════ */
+  #setup { padding: 24px 20px 32px; gap: 0; }
+  .setup-header { padding: 52px 0 24px; }
+  .setup-title { font-size: 28px; }
+  .setup-sub { color: var(--text-muted); font-size: 14px; margin-top: 4px; }
+  .players-list { display: flex; flex-direction: column; gap: 10px; flex: 1; margin-bottom: 16px; }
+  .player-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--r);
+    padding: 4px 4px 4px 14px;
+    transition: border-color .15s;
+  }
+  .player-row:focus-within { border-color: var(--neon-blue); }
+  .player-num {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--text-muted);
+    width: 20px;
+    flex-shrink: 0;
+  }
+  .player-input {
+    flex: 1;
+    background: none;
+    border: none;
+    color: var(--text);
+    font-size: 16px;
+    font-family: 'Inter', sans-serif;
+    padding: 10px 0;
+    outline: none;
+  }
+  .player-input::placeholder { color: var(--text-muted); }
+  .add-btn {
+    background: var(--surface2);
+    border: 1.5px dashed var(--border);
+    color: var(--text-muted);
+    border-radius: var(--r);
+    padding: 14px;
+    font-size: 14px;
+    cursor: pointer;
+    text-align: center;
+    transition: border-color .15s, color .15s;
+    font-family: 'Inter', sans-serif;
+  }
+  .add-btn:hover { border-color: var(--neon-blue); color: var(--neon-blue); }
+  .setup-actions { display: flex; gap: 12px; margin-top: 12px; }
+
+  /* ══════════════════════════════ DASHBOARD ══════════════════════════════ */
+  #dashboard { padding: 20px; gap: 0; }
+  .dash-header { padding-top: 16px; margin-bottom: 24px; }
+  .dash-greeting { font-size: 13px; color: var(--text-muted); font-weight: 500; letter-spacing: .05em; text-transform: uppercase; }
+  .dash-title { font-size: 26px; margin-top: 2px; }
+  .players-strip {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    margin-bottom: 24px;
+    scrollbar-width: none;
+  }
+  .players-strip::-webkit-scrollbar { display: none; }
+  .player-chip {
+    flex-shrink: 0;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 13px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .player-chip .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--neon-green);
+    box-shadow: 0 0 6px var(--neon-green);
+  }
+  .mode-cards { display: flex; flex-direction: column; gap: 14px; }
+  .mode-card {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 18px;
+    padding: 22px;
+    cursor: pointer;
+    transition: border-color .15s, transform .15s, box-shadow .15s;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+  }
+  .mode-card:active { transform: scale(.98); }
+  .mode-card.roulette:hover { border-color: var(--neon-blue); box-shadow: 0 0 20px rgba(0,212,255,.15); }
+  .mode-card.tod:hover { border-color: var(--neon-green); box-shadow: 0 0 20px rgba(0,255,136,.15); }
+  .mode-card.quiz:hover { border-color: var(--neon-purple); box-shadow: 0 0 20px rgba(168,85,247,.15); }
+  .mode-icon {
+    font-size: 36px;
+    flex-shrink: 0;
+    width: 60px; height: 60px;
+    background: var(--surface2);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .mode-info { flex: 1; }
+  .mode-name {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+  }
+  .mode-desc { font-size: 13px; color: var(--text-muted); margin-top: 2px; line-height: 1.4; }
+  .mode-arrow { font-size: 20px; color: var(--text-muted); }
+
+  /* ══════════════════════════════ ROULETTE ══════════════════════════════ */
+  #roulette { padding: 0 20px 32px; align-items: center; }
+  .roulette-header { width: 100%; padding-top: 72px; margin-bottom: 32px; text-align: center; }
+  .roulette-title { font-size: 28px; }
+  .wheel-container {
+    position: relative;
+    width: 280px;
+    height: 280px;
+    margin: 0 auto 32px;
+    flex-shrink: 0;
+  }
+  .wheel-pointer {
+    position: absolute;
+    top: -16px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0; height: 0;
+    border-left: 12px solid transparent;
+    border-right: 12px solid transparent;
+    border-top: 22px solid var(--neon-blue);
+    filter: drop-shadow(0 0 8px var(--neon-blue));
+    z-index: 10;
+  }
+  #wheelCanvas {
+    width: 280px;
+    height: 280px;
+    border-radius: 50%;
+    box-shadow: 0 0 40px rgba(0,212,255,.2), 0 0 0 3px var(--border);
+  }
+  .wheel-center {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 44px; height: 44px;
+    background: var(--bg);
+    border: 3px solid var(--border);
+    border-radius: 50%;
+  }
+  .challenge-card {
+    background: var(--surface);
+    border: 1.5px solid var(--neon-blue);
+    border-radius: 18px;
+    padding: 22px;
+    width: 100%;
+    margin-bottom: 24px;
+    min-height: 90px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 20px rgba(0,212,255,.12);
+    text-align: center;
+  }
+  .challenge-text {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 22px;
+    font-weight: 600;
+    line-height: 1.3;
+    transition: opacity .2s;
+  }
+  .challenge-text.hidden { opacity: 0; }
+  .challenge-placeholder { color: var(--text-muted); font-size: 16px; font-style: italic; }
+
+  /* ══════════════════════════════ TRUTH OR DARE ══════════════════════════════ */
+  #tod { padding: 0 20px 32px; }
+  .tod-header { padding-top: 72px; margin-bottom: 32px; }
+  .tod-title { font-size: 28px; }
+  .tod-sub { color: var(--text-muted); font-size: 14px; margin-top: 4px; }
+  .tod-picker { display: flex; gap: 12px; margin-bottom: 28px; }
+  .tod-card {
+    flex: 1;
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 18px;
+    padding: 24px 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color .15s, box-shadow .15s, transform .1s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  .tod-card:active { transform: scale(.97); }
+  .tod-card.truth:hover, .tod-card.truth.active { border-color: var(--neon-blue); box-shadow: 0 0 20px rgba(0,212,255,.2); }
+  .tod-card.dare:hover, .tod-card.dare.active { border-color: var(--danger); box-shadow: 0 0 20px rgba(255,68,102,.2); }
+  .tod-card-icon { font-size: 32px; }
+  .tod-card-label {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+  }
+  .tod-result {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 18px;
+    padding: 28px 22px;
+    min-height: 130px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    text-align: center;
+    transition: border-color .3s, box-shadow .3s;
+  }
+  .tod-result.truth-mode { border-color: var(--neon-blue); box-shadow: 0 0 20px rgba(0,212,255,.12); }
+  .tod-result.dare-mode { border-color: var(--danger); box-shadow: 0 0 20px rgba(255,68,102,.12); }
+  .tod-type-badge {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 20px;
+  }
+  .tod-type-badge.truth { background: rgba(0,212,255,.15); color: var(--neon-blue); }
+  .tod-type-badge.dare { background: rgba(255,68,102,.15); color: var(--danger); }
+  .tod-prompt {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 22px;
+    font-weight: 600;
+    line-height: 1.35;
+    transition: opacity .2s;
+  }
+  .tod-prompt.hidden { opacity: 0; }
+  .tod-empty { color: var(--text-muted); font-size: 15px; }
+  .tod-actions { margin-top: 20px; display: flex; gap: 12px; }
+
+  /* ══════════════════════════════ QUIZ ══════════════════════════════ */
+  #quiz { padding: 0 20px 32px; }
+  .quiz-header { padding-top: 72px; margin-bottom: 24px; }
+  .quiz-meta { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .quiz-counter { font-size: 13px; color: var(--text-muted); font-weight: 600; }
+  .quiz-score-badge {
+    background: rgba(0,255,136,.1);
+    border: 1px solid rgba(0,255,136,.25);
+    color: var(--neon-green);
+    font-size: 13px;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: 20px;
+  }
+  .quiz-timer-bar {
+    height: 4px;
+    background: var(--surface2);
+    border-radius: 2px;
+    margin-bottom: 24px;
+    overflow: hidden;
+  }
+  .quiz-timer-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--neon-green), var(--neon-blue));
+    border-radius: 2px;
+    transition: width .1s linear;
+  }
+  .quiz-question-card {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 18px;
+    padding: 24px;
+    margin-bottom: 18px;
+  }
+  .quiz-q-label { font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--neon-blue); margin-bottom: 10px; }
+  .quiz-q-text {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 22px;
+    font-weight: 600;
+    line-height: 1.35;
+  }
+  .quiz-options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+  .quiz-option {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--r);
+    padding: 16px 18px;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: border-color .12s, background .12s;
+    text-align: left;
+  }
+  .quiz-option:not(.disabled):hover { border-color: var(--neon-blue); background: rgba(0,212,255,.05); }
+  .quiz-option.correct { border-color: var(--neon-green); background: rgba(0,255,136,.08); }
+  .quiz-option.wrong { border-color: var(--danger); background: rgba(255,68,102,.08); }
+  .quiz-option.disabled { cursor: default; }
+  .quiz-opt-letter {
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    background: var(--surface2);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+  .quiz-option.correct .quiz-opt-letter { background: rgba(0,255,136,.2); color: var(--neon-green); }
+  .quiz-option.wrong .quiz-opt-letter { background: rgba(255,68,102,.2); color: var(--danger); }
+  .quiz-feedback {
+    text-align: center;
+    padding: 14px;
+    border-radius: var(--r);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 14px;
+    opacity: 0;
+    transition: opacity .2s;
+  }
+  .quiz-feedback.show { opacity: 1; }
+  .quiz-feedback.correct { background: rgba(0,255,136,.1); color: var(--neon-green); }
+  .quiz-feedback.wrong { background: rgba(255,68,102,.1); color: var(--danger); }
+  .quiz-feedback.timeout { background: rgba(255,215,0,.1); color: var(--gold); }
+
+  /* ══════════════════════════════ RESULTS ══════════════════════════════ */
+  #results { padding: 32px 20px; align-items: center; gap: 0; }
+  .results-crown { font-size: 64px; text-align: center; margin-bottom: 8px; }
+  .results-title { font-size: 32px; text-align: center; margin-bottom: 4px; }
+  .results-sub { color: var(--text-muted); font-size: 14px; text-align: center; margin-bottom: 32px; }
+  .scoreboard {
+    width: 100%;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 18px;
+    overflow: hidden;
+    margin-bottom: 28px;
+  }
+  .score-row {
+    display: flex;
+    align-items: center;
+    padding: 16px 18px;
+    gap: 14px;
+    border-bottom: 1px solid var(--border);
+    transition: background .15s;
+  }
+  .score-row:last-child { border-bottom: none; }
+  .score-row.first { background: rgba(255,215,0,.05); }
+  .score-rank {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    width: 28px;
+    text-align: center;
+  }
+  .score-rank.gold { color: var(--gold); }
+  .score-rank.silver { color: #c0c0c0; }
+  .score-rank.bronze { color: #cd7f32; }
+  .score-name { flex: 1; font-size: 16px; font-weight: 500; }
+  .score-pts {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--neon-green);
+  }
+  .results-actions { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+
+  /* ══════════════════════════════ TOAST ══════════════════════════════ */
+  #toast {
+    position: fixed;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--surface2);
+    border: 1.5px solid var(--border);
+    border-radius: 30px;
+    padding: 12px 22px;
+    font-size: 14px;
+    font-weight: 500;
+    opacity: 0;
+    transition: opacity .25s, transform .25s;
+    z-index: 200;
+    white-space: nowrap;
+    pointer-events: none;
+    max-width: calc(100% - 40px);
+  }
+  #toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* ══════════════════════════════ CONFETTI ══════════════════════════════ */
+  #confetti-canvas {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 150;
+  }
+
+  /* ══════════════════════════════ PING ANIMATION ══════════════════════════════ */
+  @keyframes ping {
+    0% { transform: scale(1); opacity: 1; }
+    75% { transform: scale(1.5); opacity: 0; }
+    100% { transform: scale(1.5); opacity: 0; }
+  }
+  .ping { animation: ping 1.2s cubic-bezier(0,0,.2,1) infinite; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- HOME -->
+  <div id="home" class="screen active">
+    <div class="home-badge">⚽ Football Party Game</div>
+    <div class="home-logo display">MatchNight</div>
+    <p class="home-tagline">Party games for your watch night.<br/>No app store. Just vibes.</p>
+    <div class="home-modes">
+      <div class="home-mode-chip">🎡<span>Roulette</span></div>
+      <div class="home-mode-chip">😂<span>T or D</span></div>
+      <div class="home-mode-chip">🧠<span>Quiz</span></div>
+    </div>
+    <button class="btn btn-primary home-cta display" onclick="goTo('setup')">Start the Night →</button>
+    <p class="home-footer">2–10 players · No signup needed</p>
+  </div>
+
+  <!-- SETUP -->
+  <div id="setup" class="screen">
+    <button class="back-btn" onclick="goTo('home')">←</button>
+    <div class="setup-header">
+      <div class="display setup-title">Who's playing?</div>
+      <p class="setup-sub">Add 2 to 10 player names</p>
+    </div>
+    <div id="playersList" class="players-list"></div>
+    <button class="add-btn" id="addPlayerBtn" onclick="addPlayer()">+ Add player</button>
+    <div class="setup-actions">
+      <button class="btn btn-ghost btn-half display" onclick="goTo('home')">Back</button>
+      <button class="btn btn-primary btn-half display" onclick="startGame()">Let's Go →</button>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="dashboard" class="screen">
+    <div class="dash-header">
+      <div class="dash-greeting display">GAME NIGHT</div>
+      <div class="display dash-title" id="dashTitle">Pick a mode</div>
+    </div>
+    <div id="playerStrip" class="players-strip"></div>
+    <div class="mode-cards">
+      <div class="mode-card roulette" onclick="goTo('roulette')">
+        <div class="mode-icon">🎡</div>
+        <div class="mode-info">
+          <div class="display mode-name">Roulette</div>
+          <div class="mode-desc">Spin the wheel, face a challenge</div>
+        </div>
+        <div class="mode-arrow">›</div>
+      </div>
+      <div class="mode-card tod" onclick="goTo('tod')">
+        <div class="mode-icon">😂</div>
+        <div class="mode-info">
+          <div class="display mode-name">Truth or Dare</div>
+          <div class="mode-desc">Football edition · confess or perform</div>
+        </div>
+        <div class="mode-arrow">›</div>
+      </div>
+      <div class="mode-card quiz" onclick="startQuiz()">
+        <div class="mode-icon">🧠</div>
+        <div class="mode-info">
+          <div class="display mode-name">Football Quiz</div>
+          <div class="mode-desc">10 questions · beat your friends</div>
+        </div>
+        <div class="mode-arrow">›</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROULETTE -->
+  <div id="roulette" class="screen">
+    <button class="back-btn" onclick="goTo('dashboard')">←</button>
+    <div class="roulette-header">
+      <div class="display roulette-title">🎡 Roulette</div>
+    </div>
+    <div class="wheel-container">
+      <div class="wheel-pointer"></div>
+      <canvas id="wheelCanvas" width="280" height="280"></canvas>
+      <div class="wheel-center"></div>
+    </div>
+    <div class="challenge-card">
+      <div class="challenge-text challenge-placeholder" id="challengeText">Spin the wheel to get a challenge!</div>
+    </div>
+    <button class="btn btn-primary display" id="spinBtn" onclick="spinWheel()">🎡 Spin</button>
+  </div>
+
+  <!-- TRUTH OR DARE -->
+  <div id="tod" class="screen">
+    <button class="back-btn" onclick="goTo('dashboard')">←</button>
+    <div class="tod-header">
+      <div class="display tod-title">😂 Truth or Dare</div>
+      <p class="tod-sub">Football edition</p>
+    </div>
+    <div class="tod-picker">
+      <div class="tod-card truth" onclick="pickTod('truth')">
+        <div class="tod-card-icon">🤔</div>
+        <div class="display tod-card-label" style="color:var(--neon-blue)">Truth</div>
+      </div>
+      <div class="tod-card dare" onclick="pickTod('dare')">
+        <div class="tod-card-icon">🔥</div>
+        <div class="display tod-card-label" style="color:var(--danger)">Dare</div>
+      </div>
+    </div>
+    <div class="tod-result" id="todResult">
+      <div class="tod-empty">Tap Truth or Dare to reveal a card</div>
+    </div>
+    <div class="tod-actions">
+      <button class="btn btn-ghost display" onclick="pickTod('truth')">Another Truth</button>
+      <button class="btn btn-danger display" onclick="pickTod('dare')">Another Dare</button>
+    </div>
+  </div>
+
+  <!-- QUIZ -->
+  <div id="quiz" class="screen">
+    <button class="back-btn" onclick="goTo('dashboard')">←</button>
+    <div class="quiz-header">
+      <div class="quiz-meta">
+        <span class="quiz-counter display" id="quizCounter">Question 1 / 10</span>
+        <span class="quiz-score-badge display" id="quizScoreBadge">Score: 0</span>
+      </div>
+      <div class="quiz-timer-bar">
+        <div class="quiz-timer-fill" id="timerFill"></div>
+      </div>
+    </div>
+    <div class="quiz-question-card">
+      <div class="quiz-q-label">⚽ Football Quiz</div>
+      <div class="display quiz-q-text" id="quizQuestion">Loading...</div>
+    </div>
+    <div class="quiz-options" id="quizOptions"></div>
+    <div class="quiz-feedback" id="quizFeedback"></div>
+    <button class="btn btn-primary display" id="nextQuizBtn" onclick="nextQuestion()" style="display:none!important;opacity:0;pointer-events:none" >Next →</button>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="results" class="screen">
+    <div class="results-crown">🏆</div>
+    <div class="display results-title">Final Scores</div>
+    <p class="results-sub">Quiz complete · see who won</p>
+    <div class="scoreboard" id="scoreboard"></div>
+    <div class="results-actions">
+      <button class="btn btn-primary display" onclick="startQuiz()">Play Again</button>
+      <button class="btn btn-ghost display" onclick="goTo('dashboard')">Back to Menu</button>
+    </div>
+  </div>
+
+</div>
+
+<div id="toast"></div>
+<canvas id="confetti-canvas"></canvas>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════════════
+let players = [];
+let quizScore = 0;
+let currentQ = 0;
+let quizQuestions = [];
+let timerInterval = null;
+let timeLeft = 12;
+let wheelSpinning = false;
+let todIndex = { truth: 0, dare: 0 };
+
+// ═══════════════════════════════════════════════════════════
+//  CONTENT
+// ═══════════════════════════════════════════════════════════
+const CHALLENGES = [
+  "Do 10 push-ups right now 💪",
+  "Don't say 'goal' for the next 5 minutes",
+  "Imitate a football commentator for 30 seconds",
+  "Switch seats with the person to your left",
+  "Last one to clap loses a point",
+  "Do your best player celebration",
+  "Drink whenever your team touches the ball",
+  "Call the next goal — wrong team = penalty",
+  "Narrate everything happening in a posh accent for 2 minutes",
+  "Everyone must high-five you every time there's a corner",
+  "Do a keepie uppie with a cushion 5 times",
+  "Predict the score — loser does a dare",
+  "No phones for the next 10 minutes",
+  "Impersonate a player of someone else's choice",
+  "Do a running commentary of the next free kick",
+  "Swap your drink with the person opposite you",
+];
+
+const TRUTHS = [
+  "Which team do you secretly dislike the most?",
+  "Have you ever faked watching a match just to look cool?",
+  "Who in this room knows least about football?",
+  "What's the worst prediction you've ever made?",
+  "Have you ever cried over a football result?",
+  "Which player do you think is overrated but everyone loves?",
+  "Confess your most embarrassing football moment",
+  "Who would you drop from your favourite club's squad right now?",
+  "Have you ever lied about watching a classic match?",
+  "What football opinion would get you cancelled?",
+  "Which referee decision genuinely upset you most?",
+  "Rate your own football skills honestly out of 10",
+];
+
+const DARES = [
+  "Celebrate like your favourite player right now",
+  "Do a penalty shootout walk-up in slow motion",
+  "Sing the first football chant that comes to mind",
+  "Give a post-match interview about your current mood",
+  "Do 5 star jumps every time the ball goes out of play for the next 3 minutes",
+  "Commentate the next 2 minutes of the match in Spanish",
+  "Act out a red card offence dramatically",
+  "Do a full substitution walk: board, shoulder pat, handshake",
+  "Pretend you just scored the winning goal in a World Cup final",
+  "Do a VAR huddle impression for 20 seconds",
+  "Reenact a penalty miss with maximum drama",
+  "Announce your player of the match and make a speech",
+];
+
+const QUIZ_BANK = [
+  { q: "Which country has won the most FIFA World Cups?", opts: ["Germany","Argentina","Brazil","Italy"], ans: 2 },
+  { q: "Who is the all-time top scorer in the FIFA World Cup?", opts: ["Ronaldo","Miroslav Klose","Pelé","Just Fontaine"], ans: 1 },
+  { q: "Which club has won the most UEFA Champions League titles?", opts: ["Barcelona","AC Milan","Liverpool","Real Madrid"], ans: 3 },
+  { q: "In what year did England win the FIFA World Cup?", opts: ["1962","1966","1970","1974"], ans: 1 },
+  { q: "Which player is nicknamed 'The Egyptian King'?", opts: ["Sadio Mané","Mo Salah","Riyad Mahrez","Ahmed Musa"], ans: 1 },
+  { q: "How many players are on the pitch for one team during a match?", opts: ["10","12","11","9"], ans: 2 },
+  { q: "Which club is known as 'The Galácticos'?", opts: ["PSG","Juventus","Real Madrid","Bayern Munich"], ans: 2 },
+  { q: "What colour card results in immediate dismissal in football?", opts: ["Yellow","Orange","Red","Black"], ans: 2 },
+  { q: "Which nation hosted the 2022 FIFA World Cup?", opts: ["Saudi Arabia","UAE","Qatar","Bahrain"], ans: 2 },
+  { q: "Who won the 2022 FIFA World Cup?", opts: ["France","Brazil","Argentina","Croatia"], ans: 2 },
+  { q: "Which player has won the most Ballon d'Or awards?", opts: ["Ronaldinho","Messi","Cristiano Ronaldo","Zinedine Zidane"], ans: 1 },
+  { q: "What does VAR stand for?", opts: ["Video Assistant Referee","Virtual Action Review","Video Action Replay","Verified Assist Rule"], ans: 0 },
+  { q: "Which club plays at the Allianz Arena?", opts: ["Borussia Dortmund","Schalke","RB Leipzig","Bayern Munich"], ans: 3 },
+  { q: "In which city is the Camp Nou stadium located?", opts: ["Madrid","Seville","Valencia","Barcelona"], ans: 3 },
+  { q: "How long is a standard football match?", opts: ["80 minutes","100 minutes","90 minutes","85 minutes"], ans: 2 },
+];
+
+// ═══════════════════════════════════════════════════════════
+//  NAVIGATION
+// ═══════════════════════════════════════════════════════════
+function goTo(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (id === 'roulette') drawWheel();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  SETUP
+// ═══════════════════════════════════════════════════════════
+function renderPlayers() {
+  const list = document.getElementById('playersList');
+  list.innerHTML = '';
+  players.forEach((p, i) => {
+    const row = document.createElement('div');
+    row.className = 'player-row';
+    row.innerHTML = `
+      <span class="player-num">${i+1}</span>
+      <input class="player-input" type="text" placeholder="Player ${i+1}" value="${p}" maxlength="20"
+        oninput="players[${i}]=this.value" />
+      <button class="btn btn-ghost btn-icon" onclick="removePlayer(${i})" style="font-size:14px">✕</button>`;
+    list.appendChild(row);
+  });
+  document.getElementById('addPlayerBtn').style.display = players.length >= 10 ? 'none' : 'block';
+}
+
+function addPlayer() {
+  if (players.length >= 10) return;
+  players.push('');
+  renderPlayers();
+  const inputs = document.querySelectorAll('.player-input');
+  inputs[inputs.length - 1].focus();
+}
+
+function removePlayer(i) {
+  if (players.length <= 1) return;
+  players.splice(i, 1);
+  renderPlayers();
+}
+
+function startGame() {
+  const names = players.map(p => p.trim()).filter(Boolean);
+  if (names.length < 2) { showToast('Add at least 2 players!'); return; }
+  players = names;
+  document.getElementById('dashTitle').textContent = `${players[0]}'s night 🔥`;
+  const strip = document.getElementById('playerStrip');
+  strip.innerHTML = players.map(p => `<div class="player-chip"><span class="dot"></span>${p}</div>`).join('');
+  goTo('dashboard');
+}
+
+// Init 3 default player slots
+players = ['', '', ''];
+renderPlayers();
+
+// ═══════════════════════════════════════════════════════════
+//  ROULETTE WHEEL
+// ═══════════════════════════════════════════════════════════
+const WHEEL_COLORS = ['#00d4ff22','#00ff8822','#a855f722','#ffd70022','#ff446622','#00d4ff33'];
+const WHEEL_BORDER = ['#00d4ff','#00ff88','#a855f7','#ffd700','#ff4466','#00d4ff'];
+
+let wheelAngle = 0;
+
+function drawWheel(angle = 0) {
+  const canvas = document.getElementById('wheelCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const cx = 140, cy = 140, r = 136;
+  const n = CHALLENGES.length;
+  const slice = (2 * Math.PI) / n;
+  ctx.clearRect(0, 0, 280, 280);
+  for (let i = 0; i < n; i++) {
+    const start = angle + i * slice;
+    const end = start + slice;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, r, start, end);
+    ctx.closePath();
+    ctx.fillStyle = i % 2 === 0 ? '#1a1a26' : '#12121a';
+    ctx.fill();
+    ctx.strokeStyle = WHEEL_BORDER[i % WHEEL_BORDER.length];
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    // Label
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(start + slice / 2);
+    ctx.textAlign = 'right';
+    ctx.fillStyle = '#fff';
+    ctx.font = '600 10px Inter';
+    const label = CHALLENGES[i].length > 20 ? CHALLENGES[i].slice(0, 18) + '…' : CHALLENGES[i];
+    ctx.fillText(label, r - 8, 4);
+    ctx.restore();
+  }
+}
+
+function spinWheel() {
+  if (wheelSpinning) return;
+  wheelSpinning = true;
+  document.getElementById('spinBtn').disabled = true;
+  document.getElementById('challengeText').textContent = '...';
+  document.getElementById('challengeText').classList.remove('challenge-placeholder');
+
+  const extraSpins = (5 + Math.random() * 5) * Math.PI * 2;
+  const targetAngle = wheelAngle + extraSpins;
+  const duration = 3000 + Math.random() * 1000;
+  const start = performance.now();
+  const startAngle = wheelAngle;
+
+  function ease(t) { return t < .5 ? 4*t*t*t : 1 - Math.pow(-2*t+2,3)/2; }
+
+  function animate(now) {
+    const elapsed = now - start;
+    const progress = Math.min(elapsed / duration, 1);
+    wheelAngle = startAngle + (targetAngle - startAngle) * ease(progress);
+    drawWheel(wheelAngle);
+    if (progress < 1) {
+      requestAnimationFrame(animate);
+    } else {
+      wheelAngle = targetAngle % (2 * Math.PI);
+      wheelSpinning = false;
+      document.getElementById('spinBtn').disabled = false;
+      // Which segment is at top (pointer at -π/2)?
+      const n = CHALLENGES.length;
+      const slice = (2 * Math.PI) / n;
+      const normalized = (((-Math.PI/2) - wheelAngle) % (2*Math.PI) + 2*Math.PI) % (2*Math.PI);
+      const idx = Math.floor(normalized / slice) % n;
+      showChallenge(CHALLENGES[idx]);
+    }
+  }
+  requestAnimationFrame(animate);
+}
+
+function showChallenge(text) {
+  const el = document.getElementById('challengeText');
+  el.classList.add('hidden');
+  setTimeout(() => {
+    el.textContent = text;
+    el.classList.remove('hidden', 'challenge-placeholder');
+  }, 200);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  TRUTH OR DARE
+// ═══════════════════════════════════════════════════════════
+function pickTod(type) {
+  const list = type === 'truth' ? TRUTHS : DARES;
+  const idx = Math.floor(Math.random() * list.length);
+  const result = document.getElementById('todResult');
+  const label = type === 'truth' ? '<span class="tod-type-badge truth">TRUTH</span>' : '<span class="tod-type-badge dare">DARE</span>';
+  const prompt = `<div class="tod-prompt hidden" id="todPromptText">${list[idx]}</div>`;
+  result.className = `tod-result ${type}-mode`;
+  result.innerHTML = label + prompt;
+  setTimeout(() => {
+    const el = document.getElementById('todPromptText');
+    if (el) el.classList.remove('hidden');
+  }, 100);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  QUIZ
+// ═══════════════════════════════════════════════════════════
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function startQuiz() {
+  quizScore = 0;
+  currentQ = 0;
+  quizQuestions = shuffle(QUIZ_BANK).slice(0, 10);
+  if (timerInterval) clearInterval(timerInterval);
+  goTo('quiz');
+  renderQuestion();
+}
+
+function renderQuestion() {
+  const q = quizQuestions[currentQ];
+  document.getElementById('quizCounter').textContent = `Question ${currentQ + 1} / ${quizQuestions.length}`;
+  document.getElementById('quizScoreBadge').textContent = `Score: ${quizScore}`;
+  document.getElementById('quizQuestion').textContent = q.q;
+
+  const opts = document.getElementById('quizOptions');
+  const letters = ['A','B','C','D'];
+  opts.innerHTML = q.opts.map((o, i) =>
+    `<button class="quiz-option" onclick="answerQ(${i})" id="opt${i}">
+      <span class="quiz-opt-letter">${letters[i]}</span>${o}
+    </button>`
+  ).join('');
+
+  const fb = document.getElementById('quizFeedback');
+  fb.textContent = '';
+  fb.className = 'quiz-feedback';
+
+  startTimer();
+}
+
+function startTimer() {
+  timeLeft = 12;
+  updateTimerBar();
+  if (timerInterval) clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    timeLeft -= .1;
+    updateTimerBar();
+    if (timeLeft <= 0) {
+      clearInterval(timerInterval);
+      lockOptions();
+      showFeedback('timeout', "⏱ Time's up!");
+      setTimeout(advanceQ, 1800);
+    }
+  }, 100);
+}
+
+function updateTimerBar() {
+  document.getElementById('timerFill').style.width = Math.max(0, (timeLeft / 12) * 100) + '%';
+}
+
+function answerQ(i) {
+  clearInterval(timerInterval);
+  lockOptions();
+  const q = quizQuestions[currentQ];
+  const correct = i === q.ans;
+  document.getElementById(`opt${i}`).classList.add(correct ? 'correct' : 'wrong');
+  document.getElementById(`opt${q.ans}`).classList.add('correct');
+  if (correct) {
+    quizScore++;
+    showFeedback('correct', '✅ Correct!');
+  } else {
+    showFeedback('wrong', `❌ Wrong! It was "${q.opts[q.ans]}"`);
+  }
+  setTimeout(advanceQ, 1800);
+}
+
+function lockOptions() {
+  document.querySelectorAll('.quiz-option').forEach(o => o.classList.add('disabled'));
+}
+
+function showFeedback(type, text) {
+  const fb = document.getElementById('quizFeedback');
+  fb.textContent = text;
+  fb.className = `quiz-feedback ${type} show`;
+}
+
+function advanceQ() {
+  currentQ++;
+  if (currentQ >= quizQuestions.length) {
+    showResults();
+  } else {
+    renderQuestion();
+  }
+}
+
+function nextQuestion() { advanceQ(); }
+
+// ═══════════════════════════════════════════════════════════
+//  RESULTS
+// ═══════════════════════════════════════════════════════════
+function showResults() {
+  clearInterval(timerInterval);
+  const total = quizQuestions.length;
+  // Build pseudo-scores for all players (winner = quiz player)
+  const playerScores = players.map((p, i) => ({
+    name: p,
+    score: i === 0 ? quizScore : Math.floor(Math.random() * quizScore)
+  }));
+  playerScores.sort((a,b) => b.score - a.score);
+
+  const medals = ['🥇','🥈','🥉'];
+  const rankColors = ['gold','silver','bronze'];
+
+  document.getElementById('scoreboard').innerHTML = playerScores.map((p, i) => `
+    <div class="score-row ${i===0?'first':''}">
+      <span class="score-rank ${rankColors[i]||''}">${medals[i]||i+1}</span>
+      <span class="score-name">${p.name}</span>
+      <span class="score-pts">${p.score} pts</span>
+    </div>`).join('');
+
+  goTo('results');
+  launchConfetti();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  CONFETTI
+// ═══════════════════════════════════════════════════════════
+function launchConfetti() {
+  const canvas = document.getElementById('confetti-canvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  const pieces = Array.from({length: 80}, () => ({
+    x: Math.random() * canvas.width,
+    y: -10 - Math.random() * 100,
+    r: 4 + Math.random() * 6,
+    c: ['#00d4ff','#00ff88','#a855f7','#ffd700','#ff4466'][Math.floor(Math.random()*5)],
+    vy: 2 + Math.random() * 4,
+    vx: (Math.random() - .5) * 3,
+    rot: Math.random() * 360,
+    rotV: (Math.random() - .5) * 10,
+  }));
+  let frame = 0;
+  function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    pieces.forEach(p => {
+      p.y += p.vy; p.x += p.vx; p.rot += p.rotV;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot * Math.PI/180);
+      ctx.fillStyle = p.c;
+      ctx.fillRect(-p.r/2, -p.r/2, p.r, p.r * 1.6);
+      ctx.restore();
+    });
+    frame++;
+    if (frame < 120) requestAnimationFrame(draw);
+    else ctx.clearRect(0,0,canvas.width,canvas.height);
+  }
+  draw();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  TOAST
+// ═══════════════════════════════════════════════════════════
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+</script>
+</body>
+</html>
